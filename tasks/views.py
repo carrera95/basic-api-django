@@ -27,7 +27,7 @@ class TaskDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(created_by=self.request.user)
 
 #Categories bussines logic
 class CategoryList(generics.ListAPIView):
@@ -43,13 +43,10 @@ class CategoryCreate(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
-#{
-#  "username": "adminUser2",
-#  "password": "adminUser2",
-#  "email": "adminUser2@admin.com"
-#} edd4e641cdb7669bebbc8ca7e4260c93113cd337
-#{
-#  "title": "task example 1",
-#  "description": "task 1 desc",
-#  "category": 1
-#}
+class CategoryDetail(generics.RetrieveUpdateAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
