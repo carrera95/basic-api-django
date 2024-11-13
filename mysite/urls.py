@@ -20,7 +20,7 @@ from . import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path('api/login', views.login),
-    re_path('api/register', views.register),
+    path('api/login', views.login),
+    path('api/register', views.register),
     path('api/', include('tasks.urls')),
 ]
