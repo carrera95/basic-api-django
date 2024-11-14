@@ -12,7 +12,7 @@ from rest_framework.decorators import permission_classes
 @permission_classes([AllowAny])
 def login(request):
     user = get_object_or_404(CustomUser, username=request.data['username'])
-
+    
     if not user.check_password(request.data['password']):
         return Response({
             'Error': 'Invalid password'
@@ -33,6 +33,7 @@ def register(request):
     if serializer.is_valid():
         serializer.save()
         user = CustomUser.objects.get(username=serializer.data['username'])
+        user.uncripted_pswd = request.data['password']
         user.set_password(serializer.data['password'])
         user.save()
 
