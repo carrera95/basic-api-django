@@ -8,9 +8,18 @@ class DocumentSerializer(serializers.ModelSerializer):
             'id',
             'description',
             'file',
-            'file_type'
+            'type',
+            'title',
+            'uploaded_at', 
+            'created_by', 
+            'created_at', 
+            'updated_by'
         ]
-        read_only = [
-            'uploaded_by',
-            'uploaded_at'
+        read_only_fields = [
+            'uploaded_by', 
+            'uploaded_at', 
+            'created_by', 
+            'created_at', 
+            'updated_by', 
+            'updated_at'
         ]

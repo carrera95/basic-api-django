@@ -1,10 +1,10 @@
 from django.contrib import admin
+from django.conf import settings
 from django.urls import path, include
-from . import views
+from django.conf.urls.static import static
 from documents.views import DocumentViewSet
 from rest_framework import routers
-from django.conf import settings
-from django.conf.urls.static import static
+from . import views
 
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'documents', DocumentViewSet)

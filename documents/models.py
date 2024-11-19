@@ -15,7 +15,7 @@ class Document(models.Model):
     )
     created_at = models.DateField(auto_now_add=True)
     updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+            settings.AUTH_USER_MODEL,
             on_delete=models.SET_NULL,
             blank=False,
             null=True,
@@ -23,7 +23,7 @@ class Document(models.Model):
             help_text='User who updated the doc'
     )
     uploaded_at = models.DateField(auto_now=True)
-    file_type = models.CharField(help_text='PDF, doc, exe, etc')
+    type = models.CharField(help_text='PDF, doc, exe, etc', default='doc')
     
     def __str__(self):
         return self.name
