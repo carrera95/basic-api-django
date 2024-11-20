@@ -14,13 +14,6 @@ class DocumentViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentSerializer
     permission_classes = [IsAuthenticated]
 
-    # List (GET)
-    def list(self):
-        documents = self.get_queryset() 
-        serializer = self.get_serializer(documents, many=True) 
-        
-        return Response(serializer.data)
-
     # Create (POST)
     def create(self, request): 
         serializer = self.get_serializer(data=request.data) 
@@ -36,13 +29,10 @@ class DocumentViewSet(viewsets.ModelViewSet):
         )
     
     def perform_create(self, serializer):
-        file = serializer.validated_data['file']
-        unique_filename = get_unique_filename(file.name)
+        file = serializer.validated_data['file'] 
+        file.name = get_unique_filename(file.name) 
+        file_type = file.content_type
 
-        file.name = unique_filename
-        file_content = ContentFile(file.read()) 
-        file.name = default_storage.save(file.name, file_content)
-        file_type = file.content_type 
         if file_type.startswith('application/'): 
             file_type = file_type[len('application/'):] 
         elif file_type.startswith('image/'): 
@@ -51,9 +41,16 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer.save(
             created_by=self.request.user,
             title=file.name, 
-            file=file,
-            type=file_type
+            type=file_type,
+            file=file
         )
+
+    # List (GET)
+    def list(self, request):
+        documents = self.get_queryset()
+        serializer = self.get_serializer(documents, many=True)
+        
+        return Response(serializer.data)
 
     # Detail (GET)
     def retrieve(self, request, pk=None):
@@ -68,60 +65,83 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 code=status.HTTP_404_NOT_FOUND
             )
 
-    # Update (Full Update PUT) 
+    # Full Update (PUT) 
     def update(self, request, pk=None):
-        partial = False 
+        partial = False
         document = self.get_object()
 
-        serializer = self.get_serializer(
-                    document, 
-                    data=request.data,
-                    partial=partial,
-        )
+        serializer = self.get_serializer(document, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        
+        validated_data = serializer.validated_data
 
-        serializer.is_valid(raise_exception=True) 
-        validated_data = serializer.validated_data 
+        if 'file' in validated_data:
+            file = validated_data['file']
+            file_type = file.content_type
 
-        if 'title' in validated_data: 
-            unique_filename = get_unique_filename(validated_data['title']) 
-            validated_data['title'] = unique_filename 
+            if file_type.startswith('application/'):
+                file_type = file_type[len('application/'):]
+            elif file_type.startswith('image/'):
+                file_type = file_type[len('image/'):]
+            
+            unique_filename = get_unique_filename(file.name)
+            file.name = unique_filename
+            file_content = ContentFile(file.read())
+            saved_path = default_storage.save(file.name, file_content)
 
-        if 'file' in validated_data: 
-            file = validated_data['file'] 
-            file_type = file.content_type 
-            if file_type.startswith('application/'): 
-                file_type = file_type[len('application/'):] 
-            elif file_type.startswith('image/'): 
-                file_type = file_type[len('image/'):] 
-            validated_data['file_type'] = file_type 
-        self.perform_update(serializer)
+            validated_data['file'] = saved_path
+            validated_data['file_type'] = file_type
+
+        if 'title' in validated_data:
+            unique_filename = get_unique_filename(validated_data['title'])
+            validated_data['title'] = unique_filename
+
+        for key, value in validated_data.items():
+            setattr(document, key, value)
+
+        document.save()
 
         return Response(serializer.data)
     
     # Partial Update (PATCH) 
-    def partial_update(self, request, pk=None): 
-        partial = True 
+    def partial_update(self, request, pk=None):
+        partial = True
         document = self.get_object()
 
-        serializer = self.get_serializer(
-                    document, 
-                    data=request.data, 
-                    partial=partial,
-                    updated_by_id = self.request.user, 
-        )
+        serializer = self.get_serializer(document, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        
+        validated_data = serializer.validated_data
 
-        serializer.is_valid(raise_exception=True) 
-        self.perform_update(serializer)
-        validated_data = serializer.validated_data 
+        if 'file' in validated_data:
+            file = validated_data['file']
+            file_type = file.content_type
 
-        if 'title' in validated_data: 
-            unique_filename = get_unique_filename(validated_data['title']) 
-            validated_data['title'] = unique_filename 
-            self.perform_update(serializer) 
+            if file_type.startswith('application/'):
+                file_type = file_type[len('application/'):]
+            elif file_type.startswith('image/'):
+                file_type = file_type[len('image/'):]
 
-        return Response(serializer.data) 
+            unique_filename = get_unique_filename(file.name)
+            file.name = unique_filename
+            file_content = ContentFile(file.read())
+            saved_path = default_storage.save(file.name, file_content)
 
-    # Delete
+            validated_data['file'] = saved_path
+            validated_data['file_type'] = file_type
+
+        if 'title' in validated_data:
+            unique_filename = get_unique_filename(validated_data['title'])
+            validated_data['title'] = unique_filename
+
+        for key, value in validated_data.items():
+            setattr(document, key, value)
+
+        document.save()
+
+        return Response(serializer.data)
+
+    # Delete (DELETE)
     def destroy(self, request, pk=None): 
         document = self.get_object() 
         document.delete()
