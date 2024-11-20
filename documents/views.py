@@ -26,7 +26,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data) 
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-    
+
         headers = self.get_success_headers(serializer.data) 
         
         return Response(
@@ -37,12 +37,23 @@ class DocumentViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         file = serializer.validated_data['file']
-        unique_filename = get_unique_filename(file.name) 
+        unique_filename = get_unique_filename(file.name)
 
         file.name = unique_filename
         file_content = ContentFile(file.read()) 
-        file.name = default_storage.save(file.name, file_content) 
-        serializer.save(created_by=self.request.user, title=file.name, file=file)
+        file.name = default_storage.save(file.name, file_content)
+        file_type = file.content_type 
+        if file_type.startswith('application/'): 
+            file_type = file_type[len('application/'):] 
+        elif file_type.startswith('image/'): 
+            file_type = file_type[len('image/'):]
+
+        serializer.save(
+            created_by=self.request.user,
+            title=file.name, 
+            file=file,
+            type=file_type
+        )
 
     # Detail (GET)
     def retrieve(self, request, pk=None):
@@ -64,7 +75,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(
                     document, 
-                    data=request.data, 
+                    data=request.data,
                     partial=partial,
         )
 
@@ -74,7 +85,17 @@ class DocumentViewSet(viewsets.ModelViewSet):
         if 'title' in validated_data: 
             unique_filename = get_unique_filename(validated_data['title']) 
             validated_data['title'] = unique_filename 
-            self.perform_update(serializer) 
+
+        if 'file' in validated_data: 
+            file = validated_data['file'] 
+            file_type = file.content_type 
+            if file_type.startswith('application/'): 
+                file_type = file_type[len('application/'):] 
+            elif file_type.startswith('image/'): 
+                file_type = file_type[len('image/'):] 
+            validated_data['file_type'] = file_type 
+        self.perform_update(serializer)
+
         return Response(serializer.data)
     
     # Partial Update (PATCH) 
@@ -100,10 +121,11 @@ class DocumentViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data) 
 
+    # Delete
     def destroy(self, request, pk=None): 
         document = self.get_object() 
         document.delete()
-        
+
         return Response(
             status=status.HTTP_204_NO_CONTENT
         )
