@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny 
 from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import MyTokenObtainPairSerializer
 from users.serializers import UserSerializer
 from users.models import CustomUser
 from django.shortcuts import get_object_or_404
@@ -31,7 +30,7 @@ def login(request):
         'refresh': refresh_token, 
         'user': { 
             'id': user.id, 
-            'username': user.username, 
+            'username': user.username,
             'email': user.email, 
             'name': user.first_name, 
             'is_admin': user.is_staff 
